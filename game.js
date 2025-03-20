@@ -1,23 +1,48 @@
 // Game variables
-let canvas, ctx, startButton, scoreElement;
+let canvas, ctx, startButton, scoreElement, highScoreElement;
 
 // Game state
 let gameStarted = false;
 let gameOver = false;
 let score = 0;
+let highScore = localStorage.getItem('flappyKippHighScore') || 0;
 let speed = 2;
 let gravity = 0.5;
 let jumpStrength = -8;
+
+// Physics presets
+const physicsPresets = {
+    original: {
+        gravity: 0.5,
+        jumpStrength: -8,
+        speed: 2,
+        airResistance: 0
+    },
+    floaty: {
+        gravity: 0.3,
+        jumpStrength: -6,
+        speed: 2,
+        airResistance: 0.1
+    },
+    heavy: {
+        gravity: 0.7,
+        jumpStrength: -10,
+        speed: 2,
+        airResistance: 0.05
+    }
+};
+
+let currentPreset = physicsPresets.heavy; // Changed default to heavy
 
 // Asset paths (placeholder until actual images are provided)
 const assets = {
     playerNormal: 'assets/player-normal.png',
     playerFlap: 'assets/player-flap.png',
     playerHit: 'assets/player-hit.png',
-    obstacles: [
-        'assets/obstacle-maga.png',
-        'assets/obstacle-trump.png',
-        'assets/obstacle-republican.png'
+    signs: [
+        'assets/signs/maga.png',
+        'assets/signs/trump.png',
+        'assets/signs/republican.png'
     ],
     fallback: 'assets/fallback.png',
     background: 'assets/background.png'
@@ -76,8 +101,9 @@ const player = {
     },
     
     update() {
-        // Apply gravity
-        this.velocity += gravity;
+        // Apply gravity and air resistance
+        this.velocity += currentPreset.gravity;
+        this.velocity *= (1 - currentPreset.airResistance);
         this.y += this.velocity;
         
         // Prevent going out of bounds
@@ -93,7 +119,7 @@ const player = {
     },
     
     flap() {
-        this.velocity = jumpStrength;
+        this.velocity = currentPreset.jumpStrength;
         this.isFlapping = true;
         setTimeout(() => {
             this.isFlapping = false;
@@ -116,13 +142,14 @@ const obstacles = {
     spawnInterval: 1500, // ms
     lastSpawnTime: 0,
     images: [],
+    signPadding: 4, // Reduced padding for signs
     
     init() {
-        // Load obstacle images
-        assets.obstacles.forEach(path => {
+        // Load sign images
+        assets.signs.forEach(path => {
             const img = new Image();
             img.src = path;
-            img.onerror = () => console.log(`Failed to load obstacle image: ${path}, using fallback`);
+            img.onerror = () => console.log(`Failed to load sign image: ${path}, using fallback`);
             this.images.push(img);
         });
         
@@ -158,7 +185,7 @@ const obstacles = {
     update() {
         for (let i = 0; i < this.list.length; i++) {
             const obstacle = this.list[i];
-            obstacle.x -= speed;
+            obstacle.x -= currentPreset.speed;
             
             // Check if player passed an obstacle
             if (!obstacle.counted && obstacle.x + this.width < player.x) {
@@ -186,19 +213,85 @@ const obstacles = {
             
             // Draw top obstacle
             if (!img.complete || img.naturalWidth === 0) {
-                // Fallback to rectangle if image isn't loaded
-                ctx.drawImage(obstacleFallback, obstacle.x, 0, this.width, obstacle.topHeight);
+                this.drawFallbackObstacle(obstacle.x, 0, obstacle.topHeight, true);
             } else {
-                ctx.drawImage(img, obstacle.x, 0, this.width, obstacle.topHeight);
+                this.drawSignWithImage(obstacle.x, 0, obstacle.topHeight, img, true);
             }
             
             // Draw bottom obstacle
             if (!img.complete || img.naturalWidth === 0) {
-                ctx.drawImage(obstacleFallback, obstacle.x, obstacle.bottomY, this.width, obstacle.bottomHeight);
+                this.drawFallbackObstacle(obstacle.x, obstacle.bottomY, obstacle.bottomHeight, false);
             } else {
-                ctx.drawImage(img, obstacle.x, obstacle.bottomY, this.width, obstacle.bottomHeight);
+                this.drawSignWithImage(obstacle.x, obstacle.bottomY, obstacle.bottomHeight, img, false);
             }
         });
+    },
+    
+    drawSignWithImage(x, y, height, img, isTop) {
+        // Draw pole
+        ctx.fillStyle = '#8B4513'; // Brown color for pole
+        ctx.fillRect(x + this.width/2 - 2, y, 4, height);
+        
+        // Calculate sign dimensions
+        const signWidth = this.width - (this.signPadding * 2);
+        const signHeight = 40;
+        const signX = x + this.signPadding;
+        const signY = isTop ? y + height - signHeight : y;
+        
+        // Draw sign background
+        ctx.fillStyle = '#e74c3c'; // Red background
+        ctx.fillRect(signX, signY, signWidth, signHeight);
+        
+        // Draw sign border
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(signX, signY, signWidth, signHeight);
+        
+        // Calculate image dimensions to fit within sign while maintaining aspect ratio
+        const imgAspectRatio = img.naturalWidth / img.naturalHeight;
+        let drawWidth = signWidth - (this.signPadding * 2);
+        let drawHeight = signHeight - (this.signPadding * 2);
+        
+        if (drawWidth / drawHeight > imgAspectRatio) {
+            drawWidth = drawHeight * imgAspectRatio;
+        } else {
+            drawHeight = drawWidth / imgAspectRatio;
+        }
+        
+        // Center the image in the sign
+        const imgX = signX + (signWidth - drawWidth) / 2;
+        const imgY = signY + (signHeight - drawHeight) / 2;
+        
+        // Draw the image
+        ctx.drawImage(img, imgX, imgY, drawWidth, drawHeight);
+    },
+    
+    drawFallbackObstacle(x, y, height, isTop) {
+        // Draw pole
+        ctx.fillStyle = '#8B4513'; // Brown color for pole
+        ctx.fillRect(x + this.width/2 - 2, y, 4, height);
+        
+        // Draw sign
+        const signWidth = this.width - (this.signPadding * 2);
+        const signHeight = 40;
+        const signX = x + this.signPadding;
+        const signY = isTop ? y + height - signHeight : y;
+        
+        // Sign background
+        ctx.fillStyle = '#e74c3c'; // Red background
+        ctx.fillRect(signX, signY, signWidth, signHeight);
+        
+        // Sign border
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(signX, signY, signWidth, signHeight);
+        
+        // Sign text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('MAGA', signX + signWidth/2, signY + signHeight/2);
     },
     
     checkCollision(obstacle) {
@@ -243,8 +336,20 @@ function gameLoop() {
     obstacles.draw();
     player.draw();
     
+    // Draw score overlay
+    if (gameStarted) {
+        ctx.font = 'bold 24px Arial';
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'left';
+        ctx.strokeText(`Score: ${score}`, 20, 40);
+        ctx.fillText(`Score: ${score}`, 20, 40);
+    }
+    
     // Draw game over message
     if (gameOver) {
+        updateHighScore();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
@@ -271,6 +376,8 @@ function initializeGame() {
     ctx = canvas.getContext('2d');
     startButton = document.getElementById('start-button');
     scoreElement = document.getElementById('score');
+    highScoreElement = document.getElementById('high-score');
+    const physicsPresetSelect = document.getElementById('physics-preset');
     
     // Set canvas dimensions
     canvas.width = 400;
@@ -292,6 +399,23 @@ function initializeGame() {
     // Initialize obstacles
     obstacles.init();
     
+    // Update high score display
+    highScoreElement.textContent = highScore;
+    
+    // Add physics preset change handler
+    physicsPresetSelect.addEventListener('change', (e) => {
+        const preset = e.target.value;
+        currentPreset = physicsPresets[preset];
+        // Reset game state when changing physics
+        if (gameStarted) {
+            gameOver = false;
+            score = 0;
+            scoreElement.textContent = score;
+            player.reset();
+            obstacles.reset();
+        }
+    });
+    
     // Add event listeners
     startButton.addEventListener('click', () => {
         if (!gameStarted) {
@@ -308,6 +432,23 @@ function initializeGame() {
             scoreElement.textContent = score;
             player.reset();
             obstacles.reset();
+        }
+    });
+    
+    // Mouse click event
+    canvas.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (gameOver) {
+            gameOver = false;
+            score = 0;
+            scoreElement.textContent = score;
+            player.reset();
+            obstacles.reset();
+        } else if (gameStarted) {
+            player.flap();
+        } else {
+            gameStarted = true;
+            startButton.textContent = 'Restart Game';
         }
     });
     
@@ -351,6 +492,15 @@ function initializeGame() {
     
     // Start the game loop
     gameLoop();
+}
+
+// Update high score when game ends
+function updateHighScore() {
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('flappyKippHighScore', highScore);
+        highScoreElement.textContent = highScore;
+    }
 }
 
 // Wait for DOM to be fully loaded before initializing

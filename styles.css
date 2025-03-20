@@ -33,8 +33,49 @@ h1 {
 }
 
 .score-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
     font-size: 1.5rem;
     font-weight: bold;
+}
+
+.score, .high-score {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.high-score {
+    color: #e74c3c;
+    font-size: 1.2rem;
+}
+
+.physics-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.physics-controls label {
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+.physics-controls select {
+    padding: 5px 10px;
+    font-size: 1rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.physics-controls select:focus {
+    outline: none;
+    border-color: #3498db;
 }
 
 #start-button {

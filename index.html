@@ -11,14 +11,28 @@
         <div class="game-header">
             <h1>FlappyKipp</h1>
             <div class="score-container">
-                <span>Score: </span>
-                <span id="score">0</span>
+                <div class="score">
+                    <span>Score: </span>
+                    <span id="score">0</span>
+                </div>
+                <div class="high-score">
+                    <span>High Score: </span>
+                    <span id="high-score">0</span>
+                </div>
+            </div>
+            <div class="physics-controls">
+                <label for="physics-preset">Physics Preset:</label>
+                <select id="physics-preset">
+                    <option value="heavy" selected>Heavy</option>
+                    <option value="floaty">Floaty</option>
+                    <option value="original">Original</option>
+                </select>
             </div>
             <button id="start-button">Start Game</button>
         </div>
         <canvas id="game-canvas"></canvas>
         <div class="game-footer">
-            <p>Press SPACE to flap!</p>
+            <p>Press SPACE or click to flap!</p>
         </div>
     </div>
     <script src="game.js"></script>
