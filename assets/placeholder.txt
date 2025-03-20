@@ -1,0 +1,11 @@
+Required images for the game:
+
+1. kipp-normal.png - Default face image for Kipp
+2. kipp-flap.png - Kipp's face when flapping
+3. kipp-hit.png - Kipp's face when hitting an obstacle
+4. obstacle-maga.png - MAGA-themed obstacle
+5. obstacle-trump.png - Trump-themed obstacle
+6. obstacle-republican.png - Republican-themed obstacle
+
+Replace this placeholder file with the actual images.
+The game has fallbacks if images aren't available, but it looks better with proper images. 
