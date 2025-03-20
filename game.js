@@ -80,7 +80,7 @@ const player = {
     trailWidth: 2, // Width of each trail segment
     
     init() {
-        this.y = canvas.height / 2;
+        this.y = canvas.logicalHeight / 2;
         this.trail = [];
     },
     
@@ -168,8 +168,8 @@ const player = {
             this.y = 0;
             this.velocity = 0;
         }
-        if (this.y + this.height > canvas.height) {
-            this.y = canvas.height - this.height;
+        if (this.y + this.height > canvas.logicalHeight) {
+            this.y = canvas.logicalHeight - this.height;
             this.velocity = 0;
             gameOver = true;
         }
@@ -184,7 +184,7 @@ const player = {
     },
     
     reset() {
-        this.y = canvas.height / 2;
+        this.y = canvas.logicalHeight / 2;
         this.velocity = 0;
         this.trail = [];
     }
@@ -222,13 +222,13 @@ const obstacles = {
         if (currentTime - this.lastSpawnTime > this.spawnInterval) {
             const topHeight = Math.random() * (this.maxHeight - this.minHeight) + this.minHeight;
             const bottomY = topHeight + this.gap;
-            const bottomHeight = canvas.height - bottomY;
+            const bottomHeight = canvas.logicalHeight - bottomY;
             
             // Randomly select an obstacle image
             const imageIndex = Math.floor(Math.random() * this.images.length);
             
             this.list.push({
-                x: canvas.width,
+                x: canvas.logicalWidth,
                 topHeight,
                 bottomY,
                 bottomHeight,
@@ -372,13 +372,16 @@ const obstacles = {
 // Background (sky)
 function drawBackground() {
     ctx.fillStyle = '#87CEEB';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, canvas.logicalWidth, canvas.logicalHeight);
 }
 
 // Game loop
 function gameLoop() {
+    // Check for mobile device
+    const isMobile = window.matchMedia('(max-width: 600px)').matches;
+    
     // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.logicalWidth, canvas.logicalHeight);
     
     // Draw background
     drawBackground();
@@ -393,6 +396,26 @@ function gameLoop() {
     // Always draw elements
     obstacles.draw();
     player.draw();
+    
+    // Draw start screen
+    if (!gameStarted) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.logicalWidth, canvas.logicalHeight);
+        
+        ctx.font = 'bold 36px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.fillText('FlappyKipp', canvas.logicalWidth / 2, canvas.logicalHeight / 2 - 40);
+        
+        ctx.font = '24px Arial';
+        const startText = isMobile ? 'Tap to Start' : 'Click or Press SPACE to Start';
+        ctx.fillText(startText, canvas.logicalWidth / 2, canvas.logicalHeight / 2 + 20);
+        
+        // Draw instruction
+        ctx.font = '18px Arial';
+        const controlText = isMobile ? 'Tap to flap!' : 'Click or Press SPACE to flap!';
+        ctx.fillText(controlText, canvas.logicalWidth / 2, canvas.logicalHeight / 2 + 60);
+    }
     
     // Draw score overlay
     if (gameStarted) {
@@ -409,19 +432,20 @@ function gameLoop() {
     if (gameOver) {
         updateHighScore();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, canvas.logicalWidth, canvas.logicalHeight);
         
         ctx.font = 'bold 36px Arial';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 60);
+        ctx.fillText('GAME OVER', canvas.logicalWidth / 2, canvas.logicalHeight / 2 - 60);
         
         ctx.font = '24px Arial';
-        ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2);
-        ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 40);
+        ctx.fillText(`Score: ${score}`, canvas.logicalWidth / 2, canvas.logicalHeight / 2);
+        ctx.fillText(`High Score: ${highScore}`, canvas.logicalWidth / 2, canvas.logicalHeight / 2 + 40);
         
+        const restartText = isMobile ? 'Tap to restart' : 'Press SPACE to restart';
         ctx.font = '18px Arial';
-        ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 80);
+        ctx.fillText(restartText, canvas.logicalWidth / 2, canvas.logicalHeight / 2 + 80);
     }
     
     // Continue the game loop
@@ -438,9 +462,52 @@ function initializeGame() {
     highScoreElement = document.getElementById('high-score');
     const physicsPresetSelect = document.getElementById('physics-preset');
     
-    // Set canvas dimensions
-    canvas.width = 400;
-    canvas.height = 600;
+    // Handle high DPI displays
+    function setupCanvas() {
+        const isMobile = window.matchMedia('(max-width: 600px)').matches;
+        let width, height;
+        
+        if (isMobile) {
+            // On mobile, use viewport dimensions
+            width = window.innerWidth;
+            height = window.innerHeight;
+        } else {
+            // On desktop, use fixed dimensions
+            width = 400;
+            height = 600;
+        }
+        
+        // Get the device pixel ratio
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Set the canvas size in CSS pixels
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        
+        // Set the canvas size in actual pixels
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        
+        // Scale the context to handle the device pixel ratio
+        ctx.scale(dpr, dpr);
+        
+        // Store the logical canvas size for game calculations
+        canvas.logicalWidth = width;
+        canvas.logicalHeight = height;
+    }
+    
+    // Initial setup
+    setupCanvas();
+    
+    // Handle resize events
+    window.addEventListener('resize', () => {
+        setupCanvas();
+        // Reset game elements positions if needed
+        player.init();
+        if (gameStarted) {
+            obstacles.reset();
+        }
+    });
     
     // Initialize player
     player.init();

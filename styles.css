@@ -19,6 +19,8 @@ body {
     align-items: center;
     gap: 20px;
     padding: 10px;
+    width: 100%;
+    max-width: 400px;
 }
 
 .game-header {
@@ -26,6 +28,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 10px;
+    width: 100%;
 }
 
 h1 {
@@ -103,33 +106,34 @@ h1 {
 
 /* Mobile Optimizations */
 @media (max-width: 600px) {
+    body {
+        background-color: #87CEEB;
+        padding: 0;
+        margin: 0;
+        height: 100vh;
+        height: 100dvh; /* Use dynamic viewport height when available */
+        overflow: hidden;
+    }
+
     .game-container {
-        gap: 10px;
-        padding: 5px;
+        padding: 0;
+        margin: 0;
+        gap: 0;
+        height: 100%;
     }
 
-    .game-header {
-        gap: 5px;
-    }
-
-    h1 {
-        font-size: 1.8rem;
-        margin-bottom: 5px;
-    }
-
-    .physics-controls {
-        display: none; /* Hide physics controls on mobile */
+    .game-header, .game-footer {
+        display: none; /* Hide all UI except canvas on mobile */
     }
 
     #game-canvas {
-        width: 100%;
-        max-width: 400px;
-        height: auto;
-        aspect-ratio: 2/3; /* Maintain 400x600 ratio */
-    }
-
-    .game-footer {
-        font-size: 0.9rem;
-        margin-top: 5px;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh; /* Use dynamic viewport height when available */
+        border: none;
+        touch-action: manipulation; /* Disable double-tap zoom */
+        -webkit-touch-callout: none; /* Disable callout */
+        -webkit-user-select: none; /* Disable selection */
+        user-select: none;
     }
 } 
