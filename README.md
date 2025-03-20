@@ -1,21 +1,21 @@
-# KippyFlap
+# FlappyKipp
 
-A "Flappy Bird" clone with a political twist, where Kipp (a Democrat) has to avoid Republican-themed obstacles.
+A "Flappy Bird" clone with a political twist, where the player (a Democrat) has to avoid Republican-themed obstacles.
 
 ## How to Play
 
 1. Simply open `index.html` in any modern web browser to start the game.
-2. Press the Space key or tap the screen (on mobile devices) to make Kipp flap.
+2. Press the Space key or tap the screen (on mobile devices) to make the character flap.
 3. Avoid hitting the politically-themed obstacles.
 4. Try to achieve the highest score possible!
 
-## Required Assets
+## Assets
 
-For the game to display properly, you'll need to add the following images to the `assets` folder:
+The game works without any external assets, using fallback colored rectangles for all game elements. However, for a more personalized experience, you can add the following images to the `assets` folder:
 
-- `kipp-normal.png` - Default face image
-- `kipp-flap.png` - Face image when flapping
-- `kipp-hit.png` - Face image when hitting an obstacle
+- `player-normal.png` - Default face/character image
+- `player-flap.png` - Face/character when flapping
+- `player-hit.png` - Face/character when hitting an obstacle
 - `obstacle-maga.png` - MAGA-themed obstacle
 - `obstacle-trump.png` - Trump-themed obstacle
 - `obstacle-republican.png` - Republican-themed obstacle

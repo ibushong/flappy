@@ -1,6 +1,6 @@
 # Obstacle Design Concepts
 
-For the "KippyFlap" game, we need Republican/MAGA-themed obstacles. Here are some design concepts:
+For the "FlappyKipp" game, we need Republican/MAGA-themed obstacles. Here are some design concepts:
 
 ## Obstacle Types
 
@@ -33,4 +33,4 @@ For the "KippyFlap" game, we need Republican/MAGA-themed obstacles. Here are som
 - Use bright colors (especially red) to make obstacles stand out
 - Political imagery should be recognizable but not overly detailed
 
-Remember that the obstacles should be visible both at the top and bottom of the screen, with a gap in between for Kipp to navigate through. 
+Remember that the obstacles should be visible both at the top and bottom of the screen, with a gap in between for the player to navigate through. 

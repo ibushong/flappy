@@ -1,12 +1,5 @@
 // Game variables
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const startButton = document.getElementById('start-button');
-const scoreElement = document.getElementById('score');
-
-// Set canvas dimensions
-canvas.width = 400;
-canvas.height = 600;
+let canvas, ctx, startButton, scoreElement;
 
 // Game state
 let gameStarted = false;
@@ -18,21 +11,38 @@ let jumpStrength = -8;
 
 // Asset paths (placeholder until actual images are provided)
 const assets = {
-    kippNormal: 'assets/kipp-normal.png',
-    kippFlap: 'assets/kipp-flap.png',
-    kippHit: 'assets/kipp-hit.png',
+    playerNormal: 'assets/player-normal.png',
+    playerFlap: 'assets/player-flap.png',
+    playerHit: 'assets/player-hit.png',
     obstacles: [
         'assets/obstacle-maga.png',
         'assets/obstacle-trump.png',
         'assets/obstacle-republican.png'
     ],
+    fallback: 'assets/fallback.png',
     background: 'assets/background.png'
 };
 
-// Kipp (the player)
-const kipp = {
+// Create fallback images
+const createFallbackImage = (color) => {
+    const fallbackCanvas = document.createElement('canvas');
+    fallbackCanvas.width = 50;
+    fallbackCanvas.height = 50;
+    const fallbackCtx = fallbackCanvas.getContext('2d');
+    fallbackCtx.fillStyle = color;
+    fallbackCtx.fillRect(0, 0, 50, 50);
+    return fallbackCanvas;
+};
+
+const playerFallbackNormal = createFallbackImage('#3498db');
+const playerFallbackFlap = createFallbackImage('#2980b9');
+const playerFallbackHit = createFallbackImage('#e74c3c');
+const obstacleFallback = createFallbackImage('#e74c3c');
+
+// Player (the character)
+const player = {
     x: 100,
-    y: canvas.height / 2,
+    y: 300, // Will be set properly on init
     width: 50,
     height: 50,
     velocity: 0,
@@ -41,20 +51,25 @@ const kipp = {
     hitImage: new Image(),
     isFlapping: false,
     
+    init() {
+        this.y = canvas.height / 2;
+    },
+    
     draw() {
         let currentImage = this.image;
+        let fallbackImg = playerFallbackNormal;
+        
         if (this.isFlapping) {
             currentImage = this.flapImage;
+            fallbackImg = playerFallbackFlap;
         } else if (gameOver) {
             currentImage = this.hitImage;
+            fallbackImg = playerFallbackHit;
         }
         
-        // Fallback to drawing a circle if images aren't loaded
-        if (!currentImage.complete) {
-            ctx.fillStyle = '#3498db';
-            ctx.beginPath();
-            ctx.arc(this.x + this.width/2, this.y + this.height/2, this.width/2, 0, Math.PI * 2);
-            ctx.fill();
+        // Fallback to canvas if images aren't loaded
+        if (!currentImage.complete || currentImage.naturalWidth === 0) {
+            ctx.drawImage(fallbackImg, this.x, this.y, this.width, this.height);
         } else {
             ctx.drawImage(currentImage, this.x, this.y, this.width, this.height);
         }
@@ -91,11 +106,6 @@ const kipp = {
     }
 };
 
-// Load Kipp's images
-kipp.image.src = assets.kippNormal;
-kipp.flapImage.src = assets.kippFlap;
-kipp.hitImage.src = assets.kippHit;
-
 // Obstacles
 const obstacles = {
     list: [],
@@ -112,8 +122,14 @@ const obstacles = {
         assets.obstacles.forEach(path => {
             const img = new Image();
             img.src = path;
+            img.onerror = () => console.log(`Failed to load obstacle image: ${path}, using fallback`);
             this.images.push(img);
         });
+        
+        // If no images are provided, use at least one fallback
+        if (this.images.length === 0) {
+            this.images.push(obstacleFallback);
+        }
     },
     
     spawn() {
@@ -144,8 +160,8 @@ const obstacles = {
             const obstacle = this.list[i];
             obstacle.x -= speed;
             
-            // Check if Kipp passed an obstacle
-            if (!obstacle.counted && obstacle.x + this.width < kipp.x) {
+            // Check if player passed an obstacle
+            if (!obstacle.counted && obstacle.x + this.width < player.x) {
                 obstacle.counted = true;
                 score++;
                 scoreElement.textContent = score;
@@ -169,17 +185,16 @@ const obstacles = {
             const img = this.images[obstacle.imageIndex];
             
             // Draw top obstacle
-            if (!img.complete) {
+            if (!img.complete || img.naturalWidth === 0) {
                 // Fallback to rectangle if image isn't loaded
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(obstacle.x, 0, this.width, obstacle.topHeight);
+                ctx.drawImage(obstacleFallback, obstacle.x, 0, this.width, obstacle.topHeight);
             } else {
                 ctx.drawImage(img, obstacle.x, 0, this.width, obstacle.topHeight);
             }
             
             // Draw bottom obstacle
-            if (!img.complete) {
-                ctx.fillRect(obstacle.x, obstacle.bottomY, this.width, obstacle.bottomHeight);
+            if (!img.complete || img.naturalWidth === 0) {
+                ctx.drawImage(obstacleFallback, obstacle.x, obstacle.bottomY, this.width, obstacle.bottomHeight);
             } else {
                 ctx.drawImage(img, obstacle.x, obstacle.bottomY, this.width, obstacle.bottomHeight);
             }
@@ -187,12 +202,12 @@ const obstacles = {
     },
     
     checkCollision(obstacle) {
-        // Check if Kipp collides with the current obstacle
+        // Check if player collides with the current obstacle
         return (
-            kipp.x + kipp.width > obstacle.x &&
-            kipp.x < obstacle.x + this.width && (
-                kipp.y < obstacle.topHeight ||
-                kipp.y + kipp.height > obstacle.bottomY
+            player.x + player.width > obstacle.x &&
+            player.x < obstacle.x + this.width && (
+                player.y < obstacle.topHeight ||
+                player.y + player.height > obstacle.bottomY
             )
         );
     },
@@ -202,9 +217,6 @@ const obstacles = {
         this.lastSpawnTime = 0;
     }
 };
-
-// Initialize obstacles
-obstacles.init();
 
 // Background (sky)
 function drawBackground() {
@@ -224,12 +236,12 @@ function gameLoop() {
     if (gameStarted && !gameOver) {
         obstacles.spawn();
         obstacles.update();
-        kipp.update();
+        player.update();
     }
     
     // Always draw elements
     obstacles.draw();
-    kipp.draw();
+    player.draw();
     
     // Draw game over message
     if (gameOver) {
@@ -252,59 +264,94 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Event listeners
-startButton.addEventListener('click', () => {
-    if (!gameStarted) {
-        gameStarted = true;
-        gameOver = false;
-        score = 0;
-        scoreElement.textContent = score;
-        kipp.reset();
-        obstacles.reset();
-        startButton.textContent = 'Restart Game';
-    } else {
-        gameOver = false;
-        score = 0;
-        scoreElement.textContent = score;
-        kipp.reset();
-        obstacles.reset();
-    }
-});
-
-window.addEventListener('keydown', (e) => {
-    // Space key to flap or restart
-    if (e.code === 'Space') {
+// Initialize the game
+function initializeGame() {
+    // Initialize DOM elements
+    canvas = document.getElementById('game-canvas');
+    ctx = canvas.getContext('2d');
+    startButton = document.getElementById('start-button');
+    scoreElement = document.getElementById('score');
+    
+    // Set canvas dimensions
+    canvas.width = 400;
+    canvas.height = 600;
+    
+    // Initialize player
+    player.init();
+    
+    // Load player's images
+    player.image.src = assets.playerNormal;
+    player.flapImage.src = assets.playerFlap;
+    player.hitImage.src = assets.playerHit;
+    
+    // Add error handling for image loading
+    player.image.onerror = () => console.log("Failed to load player normal image, using fallback");
+    player.flapImage.onerror = () => console.log("Failed to load player flap image, using fallback");
+    player.hitImage.onerror = () => console.log("Failed to load player hit image, using fallback");
+    
+    // Initialize obstacles
+    obstacles.init();
+    
+    // Add event listeners
+    startButton.addEventListener('click', () => {
+        if (!gameStarted) {
+            gameStarted = true;
+            gameOver = false;
+            score = 0;
+            scoreElement.textContent = score;
+            player.reset();
+            obstacles.reset();
+            startButton.textContent = 'Restart Game';
+        } else {
+            gameOver = false;
+            score = 0;
+            scoreElement.textContent = score;
+            player.reset();
+            obstacles.reset();
+        }
+    });
+    
+    window.addEventListener('keydown', (e) => {
+        // Space key to flap or restart
+        if (e.code === 'Space') {
+            if (gameOver) {
+                gameOver = false;
+                score = 0;
+                scoreElement.textContent = score;
+                player.reset();
+                obstacles.reset();
+            } else if (gameStarted) {
+                player.flap();
+            } else {
+                gameStarted = true;
+                startButton.textContent = 'Restart Game';
+            }
+            
+            // Prevent scrolling when pressing space
+            e.preventDefault();
+        }
+    });
+    
+    // Touch events for mobile
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
         if (gameOver) {
             gameOver = false;
             score = 0;
             scoreElement.textContent = score;
-            kipp.reset();
+            player.reset();
             obstacles.reset();
         } else if (gameStarted) {
-            kipp.flap();
+            player.flap();
         } else {
             gameStarted = true;
             startButton.textContent = 'Restart Game';
         }
-    }
-});
+    });
+    
+    // Start the game loop
+    gameLoop();
+}
 
-// Touch events for mobile
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if (gameOver) {
-        gameOver = false;
-        score = 0;
-        scoreElement.textContent = score;
-        kipp.reset();
-        obstacles.reset();
-    } else if (gameStarted) {
-        kipp.flap();
-    } else {
-        gameStarted = true;
-        startButton.textContent = 'Restart Game';
-    }
-});
-
-// Start the game loop
-gameLoop(); 
+// Wait for DOM to be fully loaded before initializing
+document.addEventListener('DOMContentLoaded', initializeGame); 
