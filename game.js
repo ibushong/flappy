@@ -96,7 +96,22 @@ const player = {
         if (!currentImage.complete || currentImage.naturalWidth === 0) {
             ctx.drawImage(fallbackImg, this.x, this.y, this.width, this.height);
         } else {
-            ctx.drawImage(currentImage, this.x, this.y, this.width, this.height);
+            // Calculate dimensions to maintain aspect ratio
+            const imgAspectRatio = currentImage.naturalWidth / currentImage.naturalHeight;
+            let drawWidth = this.width;
+            let drawHeight = this.height;
+            
+            if (drawWidth / drawHeight > imgAspectRatio) {
+                drawWidth = drawHeight * imgAspectRatio;
+            } else {
+                drawHeight = drawWidth / imgAspectRatio;
+            }
+            
+            // Center the image within the player bounds
+            const drawX = this.x + (this.width - drawWidth) / 2;
+            const drawY = this.y + (this.height - drawHeight) / 2;
+            
+            ctx.drawImage(currentImage, drawX, drawY, drawWidth, drawHeight);
         }
     },
     
