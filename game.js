@@ -76,8 +76,8 @@ const player = {
     hitImage: new Image(),
     isFlapping: false,
     trail: [], // Array to store trail positions
-    trailLength: 15, // Number of trail segments
-    trailSpacing: 3, // Horizontal spacing between trail segments
+    trailLength: 25, // Increased length for smoother trail
+    trailWidth: 2, // Width of each trail segment
     
     init() {
         this.y = canvas.height / 2;
@@ -87,19 +87,29 @@ const player = {
     draw() {
         // Draw trail
         if (gameStarted && !gameOver) {
-            const trailWidth = this.width * 0.8;
-            const trailHeight = 6;
+            const stripeHeight = this.height * 0.8; // Height of the entire stripe set
             const colors = ['#e74c3c', '#ffffff', '#3498db']; // Red, White, Blue
+            const individualStripeHeight = stripeHeight / 3;
             
+            // Draw each trail segment
             for (let i = 0; i < this.trail.length; i++) {
                 const pos = this.trail[i];
-                const alpha = (i + 1) / this.trail.length; // Fade out based on position
-                const y = pos.y + (this.height - trailHeight * 3) / 2;
-                const x = pos.x - (this.trailSpacing * i); // Offset each segment horizontally
+                const alpha = 1 - (i / this.trailLength); // Fade out as i increases
+                const y = pos.y + (this.height - stripeHeight) / 2;
                 
+                // Calculate x position with offset based on game speed and trail position
+                const xOffset = i * currentPreset.speed * 2; // Multiply by 2 to make trail longer
+                const x = pos.x - xOffset;
+                
+                // Draw all three stripes at once for each trail segment
                 colors.forEach((color, index) => {
                     ctx.fillStyle = `${color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
-                    ctx.fillRect(x, y + (index * trailHeight), trailWidth, trailHeight);
+                    ctx.fillRect(
+                        x + this.width / 3, // Start trail from back of player (trailing edge)
+                        y + (index * individualStripeHeight),
+                        this.trailWidth,
+                        individualStripeHeight
+                    );
                 });
             }
         }
@@ -115,7 +125,7 @@ const player = {
             fallbackImg = playerFallbackHit;
         }
         
-        // Fallback to canvas if images aren't loaded
+        // Draw the player on top of the trail
         if (!currentImage.complete || currentImage.naturalWidth === 0) {
             ctx.drawImage(fallbackImg, this.x, this.y, this.width, this.height);
         } else {
@@ -190,7 +200,7 @@ const obstacles = {
     spawnInterval: 1500, // ms
     lastSpawnTime: 0,
     images: [],
-    signPadding: 4, // Reduced padding for signs
+    signPadding: 0,
     
     init() {
         // Load sign images
