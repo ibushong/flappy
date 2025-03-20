@@ -18,6 +18,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 20px;
+    padding: 10px;
 }
 
 .game-header {
@@ -33,12 +34,7 @@ h1 {
 }
 
 .score-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    font-size: 1.5rem;
-    font-weight: bold;
+    display: none; /* Hide score container since we show it in game */
 }
 
 .score, .high-score {
@@ -95,7 +91,7 @@ h1 {
 
 #game-canvas {
     border: 2px solid #2c3e50;
-    background-color: #87CEEB; /* Sky blue background */
+    background-color: #87CEEB;
     width: 400px;
     height: 600px;
 }
@@ -103,4 +99,37 @@ h1 {
 .game-footer {
     font-size: 1rem;
     color: #7f8c8d;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+    .game-container {
+        gap: 10px;
+        padding: 5px;
+    }
+
+    .game-header {
+        gap: 5px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        margin-bottom: 5px;
+    }
+
+    .physics-controls {
+        display: none; /* Hide physics controls on mobile */
+    }
+
+    #game-canvas {
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+        aspect-ratio: 2/3; /* Maintain 400x600 ratio */
+    }
+
+    .game-footer {
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
 } 

@@ -67,7 +67,7 @@ const obstacleFallback = createFallbackImage('#e74c3c');
 // Player (the character)
 const player = {
     x: 100,
-    y: 300, // Will be set properly on init
+    y: 300,
     width: 50,
     height: 50,
     velocity: 0,
@@ -75,12 +75,35 @@ const player = {
     flapImage: new Image(),
     hitImage: new Image(),
     isFlapping: false,
+    trail: [], // Array to store trail positions
+    trailLength: 15, // Number of trail segments
+    trailSpacing: 3, // Horizontal spacing between trail segments
     
     init() {
         this.y = canvas.height / 2;
+        this.trail = [];
     },
     
     draw() {
+        // Draw trail
+        if (gameStarted && !gameOver) {
+            const trailWidth = this.width * 0.8;
+            const trailHeight = 6;
+            const colors = ['#e74c3c', '#ffffff', '#3498db']; // Red, White, Blue
+            
+            for (let i = 0; i < this.trail.length; i++) {
+                const pos = this.trail[i];
+                const alpha = (i + 1) / this.trail.length; // Fade out based on position
+                const y = pos.y + (this.height - trailHeight * 3) / 2;
+                const x = pos.x - (this.trailSpacing * i); // Offset each segment horizontally
+                
+                colors.forEach((color, index) => {
+                    ctx.fillStyle = `${color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
+                    ctx.fillRect(x, y + (index * trailHeight), trailWidth, trailHeight);
+                });
+            }
+        }
+        
         let currentImage = this.image;
         let fallbackImg = playerFallbackNormal;
         
@@ -116,6 +139,15 @@ const player = {
     },
     
     update() {
+        // Update trail
+        if (gameStarted && !gameOver) {
+            // Store current position
+            this.trail.unshift({ x: this.x, y: this.y });
+            if (this.trail.length > this.trailLength) {
+                this.trail.pop();
+            }
+        }
+        
         // Apply gravity and air resistance
         this.velocity += currentPreset.gravity;
         this.velocity *= (1 - currentPreset.airResistance);
@@ -144,6 +176,7 @@ const player = {
     reset() {
         this.y = canvas.height / 2;
         this.velocity = 0;
+        this.trail = [];
     }
 };
 
@@ -371,13 +404,14 @@ function gameLoop() {
         ctx.font = 'bold 36px Arial';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
+        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 60);
         
         ctx.font = '24px Arial';
-        ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
+        ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 40);
         
         ctx.font = '18px Arial';
-        ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 80);
     }
     
     // Continue the game loop
